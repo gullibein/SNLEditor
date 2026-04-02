@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixel Platformer Maker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+      html, body, #root {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+      }
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #4b5563; 
+        border-radius: 3px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #6b7280; 
+      }
+      /* Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #4b5563 transparent;
+      }
+
+      canvas {
+        image-rendering: -moz-crisp-edges;
+        image-rendering: -webkit-crisp-edges;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+
+      /* --- CRT Screen Effects --- */
+      .crt-effect {
+        position: relative;
+        overflow: hidden;
+        border-radius: 2%; /* Slight curvature */
+        background-color: #000;
+      }
+
+      .crt-effect canvas, .crt-effect img {
+        filter: blur(0.2px) brightness(1.1);
+        animation: flicker 0.1s infinite;
+      }
+
+      /* Vignette effect to darken edges */
+      .crt-effect::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.6) 100%);
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      /* Scanlines effect */
+      .crt-effect::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 3;
+        animation: scanline-move 8s linear infinite;
+      }
+
+      /* --- Theme-Specific Effects --- */
+      .mono-effect canvas, .mono-effect img {
+        filter: blur(0.5px) brightness(1.2) saturate(1.5);
+        box-shadow: 0 0 10px 2px #49ee28, 0 0 20px 5px rgba(73, 238, 40, 0.5) inset;
+      }
+      .mono-effect::after {
+        background-size: 100% 3px;
+        opacity: 0.8;
+      }
+
+      .cga-effect canvas, .cga-effect img {
+        filter: blur(0.3px) brightness(1.15) saturate(1.2);
+      }
+      .cga-effect::before {
+        background: radial-gradient(ellipse at center, rgba(0,0,0,0) 75%, rgba(0,0,0,0.4) 100%);
+      }
+      .cga-effect::after {
+        opacity: 0.6;
+      }
+
+      .vga-effect canvas, .vga-effect img {
+          filter: blur(0.1px);
+      }
+      .vga-effect::before {
+        background: none;
+      }
+      .vga-effect::after {
+          background: linear-gradient(to bottom, transparent 50%, rgba(0, 0, 0, 1) 50%);
+          background-size: 100% 3px;
+          mix-blend-mode: multiply;
+          opacity: 0.3;
+          animation: none;
+      }
+      
+      /* --- Game Text Overlay --- */
+      .game-overlay {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--text-color);
+        z-index: 10;
+        user-select: none;
+        cursor: default;
+      }
+      .game-overlay-title {
+        font-family: 'Press Start 2P', cursive;
+        font-size: 2.5rem;
+        line-height: 1.2;
+        text-shadow: 3px 3px var(--shadow-color);
+      }
+      .game-overlay-subtitle {
+        font-family: 'Press Start 2P', cursive;
+        font-size: 1rem;
+        margin-top: 2rem;
+        animation: blink 1.5s linear infinite;
+      }
+
+      .game-overlay.font-loading {
+        opacity: 0;
+      }
+      .game-overlay.font-loaded {
+        opacity: 1;
+        transition: opacity 0.3s ease-in;
+      }
+      
+      /* --- Splash Screen --- */
+      .splash-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 100;
+        cursor: pointer;
+        background-color: #000;
+        border-radius: 0 !important; /* Override crt-effect border radius */
+      }
+      .splash-screen img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+
+
+      /* --- Animations --- */
+      @keyframes flicker {
+        0%   { opacity: 0.998; }
+        5%   { opacity: 0.99; }
+        10%  { opacity: 1.0; }
+        15%  { opacity: 0.995; }
+        20%  { opacity: 1.0; }
+        90%  { opacity: 1.0; }
+        95%  { opacity: 0.992; }
+        100% { opacity: 1.0; }
+      }
+
+      @keyframes scanline-move {
+          from { background-position: 0 0; }
+          to   { background-position: 0 8px; }
+      }
+      
+      @keyframes blink {
+          50% { opacity: 0; }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "@instantdb/react": "https://esm.sh/@instantdb/react@0.17.0?external=react,react-dom"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-gray-900 text-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

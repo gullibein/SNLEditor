@@ -1,0 +1,26 @@
+{
+  "name": "spikes-and-ladders-ag01",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:p8_map": "node ../scripts/convertMapToPico8.cjs ./save2.json C:/Users/gja/AppData/Roaming/pico-8/carts/gameAG.p8",
+    "build:p8_sprites": "node ../scripts/convertSpritesToPico8.cjs ./save2.json C:/Users/gja/AppData/Roaming/pico-8/carts/gameAG.p8",
+    "build:p8": "npm run build:p8_map && npm run build:p8_sprites"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "@google/genai": "^1.33.0",
+    "@instantdb/react": "^0.22.87"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.1",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.2.7"
+  }
+}
