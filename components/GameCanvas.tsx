@@ -1584,19 +1584,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                 return; // skip gravity while tipping
             }
 
-            // Check if crate below was moved away - trigger coyote time
-            const crateBelow = crateStatesRef.current.find(c =>
-                c.id !== crate.id &&
-                Math.abs(c.x - crate.x) < 1 && // Same X position (within 1px tolerance)
-                Math.abs(c.y - (crate.y + TILE_SIZE)) < 1 // Directly below (within 1px tolerance)
-            );
-            if (crateBelow && Math.abs(crateBelow.y - (crate.y + TILE_SIZE)) > 1) {
-                // Crate below was moved away from under this crate
-                if (crate.coyoteTime === 0) {
-                    crate.coyoteTime = 6; // 6 frames of coyote time (50% longer than 4)
-                }
-            }
-
             // Don't apply gravity during coyote time
             if (crate.coyoteTime > 0) {
                 crate.coyoteTime--;
@@ -3512,25 +3499,41 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
         });
 
         // If player stopped pushing but crate is still sliding, restore player to push start position
-        if (player.isPushing && !isActuallyPushingCrate && player.pushedCrateId && player.pushStartX !== null) {
+        // Check if player is pressing movement keys
+        const isPressingMovement = input.left || input.right;
+        if (player.isPushing && !isPressingMovement && !isActuallyPushingCrate && player.pushedCrateId && player.pushStartX !== null) {
             const pushedCrate = crateStatesRef.current.find(c => c.id === player.pushedCrateId);
-            if (pushedCrate) {
-                // Check if player is still adjacent to the crate
-                const isAdjacent = player.x + player.width > pushedCrate.x && player.x < pushedCrate.x + TILE_SIZE &&
-                    player.y < pushedCrate.y + TILE_SIZE && player.y + player.height >= pushedCrate.y;
-                if (pushedCrate.x % TILE_SIZE !== 0 && isAdjacent) {
-                    // Crate is still sliding and player is still adjacent, restore player position
-                    player.x = player.pushStartX;
-                    player.y = player.pushStartY;
-                } else if (!isAdjacent) {
-                    // Player moved away from crate, clear push state
-                    player.pushedCrateId = null;
-                    player.isPushing = false;
-                    player.pushStartX = null;
-                    player.pushStartY = null;
-                }
+            if (pushedCrate && pushedCrate.x % TILE_SIZE !== 0) {
+                // Crate is still sliding, restore player position
+                player.x = player.pushStartX;
+                player.y = player.pushStartY;
+            } else if (!pushedCrate || pushedCrate.x % TILE_SIZE === 0) {
+                // Crate finished sliding, clear push state
+                player.pushedCrateId = null;
+                player.isPushing = false;
+                player.pushStartX = null;
+                player.pushStartY = null;
             }
         }
+
+        // Check for crate coyote time - after all horizontal movements are done
+        // This detects when a crate below has moved away from under a crate above
+        crateStatesRef.current.forEach(crate => {
+            if (crate.coyoteTime > 0) return; // Already has coyote time
+
+            const crateBelowY = crate.y + TILE_SIZE;
+            const isSupported = isSolidForCrate(crate.x, crateBelowY, crate.id) ||
+                crateStatesRef.current.some(c =>
+                    c.id !== crate.id &&
+                    Math.abs(c.x - crate.x) < 1 &&
+                    Math.abs(c.y - crateBelowY) < 1
+                );
+
+            if (!isSupported && crate.onGround) {
+                // Crate is no longer supported - give it coyote time
+                crate.coyoteTime = 6;
+            }
+        });
 
         const oldState = player.animationState;
         let newState: PlayerAnimationState = 'IDLE';
