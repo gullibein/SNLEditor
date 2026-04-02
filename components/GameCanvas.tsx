@@ -1081,6 +1081,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
         player.ladderExitTimer = 0; player.ladderExitDirection = 0;
         player.fallStartY = player.y; // Initialize fall start to current Y to prevent spawn landing sound
         player.transitionStartX = 0; player.transitionTargetX = null; player.transitionBypassPlatformY = null;
+        player.pushStartX = null; player.pushStartY = null; player.pushedCrateId = null; player.isPushing = false;
         if (input) { input.left = false; input.right = false; input.up = false; input.down = false; }
         collectedItemsRef.current.clear(); // Clear collected items tracking
         setLocalLevelData(level.levelData.map(a => ({ ...a })));
@@ -2030,6 +2031,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                             }
                             isActuallyPushingCrate = true;
                             pushedCrateId = pushCrate.id;
+
+                            // Record player's position when they first start pushing this crate
+                            if (player.pushedCrateId !== pushCrate.id) {
+                                player.pushStartX = player.x;
+                                player.pushStartY = player.y;
+                                player.pushedCrateId = pushCrate.id;
+                                player.isPushing = true;
+                            }
 
                             // Edge tipping: 5px overhang, only when not already tipping
                             if (pushCrate.tipState !== 'TIPPING') {
@@ -3435,7 +3444,35 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                     }
                 }
             }
+            // Check if this crate finished sliding - clear player's push state
+            if (player.pushedCrateId === crate.id && crate.x % TILE_SIZE === 0) {
+                player.pushedCrateId = null;
+                player.isPushing = false;
+                player.pushStartX = null;
+                player.pushStartY = null;
+            }
         });
+
+        // If player stopped pushing but crate is still sliding, restore player to push start position
+        if (player.isPushing && !isActuallyPushingCrate && player.pushedCrateId && player.pushStartX !== null) {
+            const pushedCrate = crateStatesRef.current.find(c => c.id === player.pushedCrateId);
+            if (pushedCrate) {
+                // Check if player is still adjacent to the crate
+                const isAdjacent = player.x + player.width > pushedCrate.x && player.x < pushedCrate.x + TILE_SIZE &&
+                    player.y < pushedCrate.y + TILE_SIZE && player.y + player.height >= pushedCrate.y;
+                if (pushedCrate.x % TILE_SIZE !== 0 && isAdjacent) {
+                    // Crate is still sliding and player is still adjacent, restore player position
+                    player.x = player.pushStartX;
+                    player.y = player.pushStartY;
+                } else if (!isAdjacent) {
+                    // Player moved away from crate, clear push state
+                    player.pushedCrateId = null;
+                    player.isPushing = false;
+                    player.pushStartX = null;
+                    player.pushStartY = null;
+                }
+            }
+        }
 
         const oldState = player.animationState;
         let newState: PlayerAnimationState = 'IDLE';

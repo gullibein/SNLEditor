@@ -94,6 +94,12 @@ export interface PlayerState {
   transitionTargetX: number | null; // Target X for ladder centering (locked when entering ladder)
   transitionBypassPlatformY: number | null; // Y position of platform to bypass during ladder grab
   fallStartY: number; // Y position when fall started (for landing sound)
+
+  // Crate pushing state
+  pushStartX: number | null; // Player's X position when crate push started
+  pushStartY: number | null; // Player's Y position when crate push started
+  pushedCrateId: string | null; // ID of crate being pushed
+  isPushing: boolean; // Whether player is currently pushing
 }
 
 export type EnemyMoveState = 'IDLE' | 'ACCELERATING' | 'MID_PAUSE' | 'DECELERATING';
