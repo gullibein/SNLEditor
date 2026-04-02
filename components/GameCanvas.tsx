@@ -1164,6 +1164,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                 pushCooldown: 0,
                 tipState: 'NONE', tipAngle: 0,
                 tipPivotX: 0, tipPivotY: 0, tipDirection: 1,
+                coyoteTime: 0,
             }));
 
         teleporterHistoryRef.current = []; // Reset history on level load
@@ -1398,6 +1399,19 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                             const prevX = pc.x;
                             pc.x = enemy.x + TILE_SIZE * enemy.direction;
                             const deltaX = pc.x - prevX;
+
+                            // Check if there's a crate above that should get coyote time
+                            if (deltaX !== 0) {
+                                const crateAbove = crateStatesRef.current.find(c =>
+                                    c.id !== pc.id &&
+                                    Math.abs(c.x - pc.x) < 1 &&
+                                    Math.abs(c.y - (pc.y - TILE_SIZE)) < 1
+                                );
+                                if (crateAbove) {
+                                    crateAbove.coyoteTime = 6; // Give 6 frames of coyote time to crate above
+                                }
+                            }
+
                             if (deltaX !== 0 &&
                                 pc.x < player.x + player.width && pc.x + TILE_SIZE > player.x &&
                                 pc.y < player.y + player.height && pc.y + TILE_SIZE > player.y) {
@@ -1493,6 +1507,19 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                             const prevX = pc.x;
                             pc.x = enemy.x + TILE_SIZE * enemy.direction;
                             const deltaX = pc.x - prevX;
+
+                            // Check if there's a crate above that should get coyote time
+                            if (deltaX !== 0) {
+                                const crateAbove = crateStatesRef.current.find(c =>
+                                    c.id !== pc.id &&
+                                    Math.abs(c.x - pc.x) < 1 &&
+                                    Math.abs(c.y - (pc.y - TILE_SIZE)) < 1
+                                );
+                                if (crateAbove) {
+                                    crateAbove.coyoteTime = 6; // Give 6 frames of coyote time to crate above
+                                }
+                            }
+
                             if (deltaX !== 0 &&
                                 pc.x < player.x + player.width && pc.x + TILE_SIZE > player.x &&
                                 pc.y < player.y + player.height && pc.y + TILE_SIZE > player.y) {
@@ -1555,6 +1582,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                     crate.vy = 0;
                 }
                 return; // skip gravity while tipping
+            }
+
+            // Check if crate below was moved away - trigger coyote time
+            const crateBelow = crateStatesRef.current.find(c =>
+                c.id !== crate.id &&
+                Math.abs(c.x - crate.x) < 1 && // Same X position (within 1px tolerance)
+                Math.abs(c.y - (crate.y + TILE_SIZE)) < 1 // Directly below (within 1px tolerance)
+            );
+            if (crateBelow && Math.abs(crateBelow.y - (crate.y + TILE_SIZE)) > 1) {
+                // Crate below was moved away from under this crate
+                if (crate.coyoteTime === 0) {
+                    crate.coyoteTime = 6; // 6 frames of coyote time (50% longer than 4)
+                }
+            }
+
+            // Don't apply gravity during coyote time
+            if (crate.coyoteTime > 0) {
+                crate.coyoteTime--;
+                crate.vy = 0;
+                crate.onGround = true; // Temporarily consider grounded
+                return; // Skip gravity and collision this frame
             }
 
             crate.vy = Math.min(crate.vy + GRAVITY, MAX_FALL_SPEED);
@@ -2038,6 +2086,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                                 player.pushStartY = player.y;
                                 player.pushedCrateId = pushCrate.id;
                                 player.isPushing = true;
+                            }
+
+                            // Check if there's a crate above that should get coyote time
+                            const crateAbove = crateStatesRef.current.find(c =>
+                                c.id !== pushCrate.id &&
+                                Math.abs(c.x - pushCrate.x) < 1 &&
+                                Math.abs(c.y - (pushCrate.y - TILE_SIZE)) < 1
+                            );
+                            if (crateAbove) {
+                                crateAbove.coyoteTime = 6; // Give 6 frames of coyote time to crate above
                             }
 
                             // Edge tipping: 5px overhang, only when not already tipping
