@@ -1650,7 +1650,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
 
                 const overlapX = Math.min(crate.x + TILE_SIZE, player.x + player.width) - Math.max(crate.x, player.x);
                 const caught = Math.max(0, Math.min((crate.y + TILE_SIZE) - player.y, player.height));
-                if (overlapX <= 3) {
+                if (overlapX <= 4) {
                     // Glancing horizontal blow — nudge sideways
                     doNudge();
                 } else if (caught > 3) {
