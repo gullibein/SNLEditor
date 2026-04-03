@@ -1309,14 +1309,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                     crate.lastTeleporterId = null;
                 }
             }
-            const crateCX = crate.x + TILE_SIZE / 2;
-            const crateCY = crate.y + TILE_SIZE / 2;
             const tp = memoizedTeleporters.find(p => {
                 if (p.id === crate.lastTeleporterId) return false;
-                // Require exact centering both vertically and horizontally (within 0.5 pixels)
-                const isVerticallyCentered = Math.abs(crateCY - (p.y + TILE_SIZE / 2)) <= 0.5;
-                const isHorizontallyCentered = Math.abs(crateCX - (p.x + TILE_SIZE / 2)) <= 0.5;
-                return isVerticallyCentered && isHorizontallyCentered;
+
+                // Check if crate overlaps with teleporter
+                if (!(crate.x < p.x + TILE_SIZE && crate.x + TILE_SIZE > p.x &&
+                      crate.y < p.y + TILE_SIZE && crate.y + TILE_SIZE > p.y)) {
+                    return false; // Crate not overlapping with teleporter
+                }
+
+                // Teleport immediately when crate enters teleporter
+                return true;
             });
             if (tp && tp.teleporterPairId !== undefined) {
                 const dest = memoizedTeleporters.find(p => p.id !== tp.id && p.teleporterPairId === tp.teleporterPairId);
