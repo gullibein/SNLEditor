@@ -254,6 +254,7 @@ export interface CrateState {
   tipPivotY: number;
   tipDirection: -1 | 1;
   coyoteTime: number; // Frames of support before falling when crate below moves away
+  wasOnCrate: boolean; // Whether crate was previously supported by another crate
 }
 
 export interface ColorTheme {

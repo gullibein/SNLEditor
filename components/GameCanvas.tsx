@@ -1165,6 +1165,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                 tipState: 'NONE', tipAngle: 0,
                 tipPivotX: 0, tipPivotY: 0, tipDirection: 1,
                 coyoteTime: 0,
+                wasOnCrate: false,
             }));
 
         teleporterHistoryRef.current = []; // Reset history on level load
@@ -3522,15 +3523,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
             if (crate.coyoteTime > 0) return; // Already has coyote time
 
             const crateBelowY = crate.y + TILE_SIZE;
-            const isSupported = isSolidForCrate(crate.x, crateBelowY, crate.id) ||
-                crateStatesRef.current.some(c =>
-                    c.id !== crate.id &&
-                    Math.abs(c.x - crate.x) < 1 &&
-                    Math.abs(c.y - crateBelowY) < 1
-                );
+            const isOnPlatform = isSolidForCrate(crate.x, crateBelowY, crate.id);
+            const isOnCrate = crateStatesRef.current.some(c =>
+                c.id !== crate.id &&
+                Math.abs(c.x - crate.x) < 1 &&
+                Math.abs(c.y - crateBelowY) < 1
+            );
+            const isSupported = isOnPlatform || isOnCrate;
 
-            if (!isSupported && crate.onGround) {
-                // Crate is no longer supported - give it coyote time
+            // Check if crate was previously on another crate but is no longer supported
+            const wasOnCrateNow = crate.wasOnCrate;
+            crate.wasOnCrate = isOnCrate; // Store for next frame
+
+            // Only give coyote time if crate was previously on another crate and is no longer supported
+            if (wasOnCrateNow && !isSupported && crate.onGround && crate.coyoteTime === 0) {
+                // Crate was on top of another crate but is no longer supported - give it coyote time
                 crate.coyoteTime = 6;
             }
         });
