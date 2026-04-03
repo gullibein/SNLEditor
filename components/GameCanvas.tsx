@@ -1313,10 +1313,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
             const crateCY = crate.y + TILE_SIZE / 2;
             const tp = memoizedTeleporters.find(p => {
                 if (p.id === crate.lastTeleporterId) return false;
-                // Require exact vertical centering (within 0.5 pixels) but allow horizontal tolerance
+                // Require exact centering both vertically and horizontally (within 0.5 pixels)
                 const isVerticallyCentered = Math.abs(crateCY - (p.y + TILE_SIZE / 2)) <= 0.5;
-                const isHorizontallyNear = Math.abs(crateCX - (p.x + TILE_SIZE / 2)) <= 3;
-                return isVerticallyCentered && isHorizontallyNear;
+                const isHorizontallyCentered = Math.abs(crateCX - (p.x + TILE_SIZE / 2)) <= 0.5;
+                return isVerticallyCentered && isHorizontallyCentered;
             });
             if (tp && tp.teleporterPairId !== undefined) {
                 const dest = memoizedTeleporters.find(p => p.id !== tp.id && p.teleporterPairId === tp.teleporterPairId);
