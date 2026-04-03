@@ -1318,8 +1318,17 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                     return false; // Crate not overlapping with teleporter
                 }
 
-                // Teleport immediately when crate enters teleporter
-                return true;
+                // Only teleport when almost centered
+                const crateCenterX = crate.x + TILE_SIZE / 2;
+                const crateCenterY = crate.y + TILE_SIZE / 2;
+                const teleporterCenterX = p.x + TILE_SIZE / 2;
+                const teleporterCenterY = p.y + TILE_SIZE / 2;
+
+                // Allow teleport when within 1 pixel of center (0.5 tolerance)
+                const isCentered = Math.abs(crateCenterX - teleporterCenterX) <= 1 &&
+                                  Math.abs(crateCenterY - teleporterCenterY) <= 1;
+
+                return isCentered;
             });
             if (tp && tp.teleporterPairId !== undefined) {
                 const dest = memoizedTeleporters.find(p => p.id !== tp.id && p.teleporterPairId === tp.teleporterPairId);
@@ -1336,29 +1345,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                         crate.lastTeleporterId = dest.id;
                         playTeleportSound();
                     }
-                }
-            } else if (tp) {
-                // If crate overlaps with teleporter but not teleported yet,
-                // move it to center to ensure it gets centered
-                const currentOverlap = Math.max(0, Math.min(crate.x + TILE_SIZE, tp.x + TILE_SIZE) - Math.max(crate.x, tp.x));
-                const overlapHeight = Math.max(0, Math.min(crate.y + TILE_SIZE, tp.y + TILE_SIZE) - Math.max(crate.y, tp.y));
-
-                // If crate is already well-centered, don't disturb it
-                const crateCenterX = crate.x + TILE_SIZE / 2;
-                const crateCenterY = crate.y + TILE_SIZE / 2;
-                const teleporterCenterX = tp.x + TILE_SIZE / 2;
-                const teleporterCenterY = tp.y + TILE_SIZE / 2;
-
-                if (Math.abs(crateCenterX - teleporterCenterX) > 0.5 || Math.abs(crateCenterY - teleporterCenterY) > 0.5) {
-                    // Move crate toward center to ensure it will be centered
-                    const targetX = tp.x;
-                    const targetY = tp.y;
-                    const centerXDiff = targetX + TILE_SIZE/2 - crate.x - TILE_SIZE/2;
-                    const centerYDiff = targetY + TILE_SIZE/2 - crate.y - TILE_SIZE/2;
-
-                    // Move halfway to center this frame
-                    crate.x += centerXDiff * 0.5;
-                    crate.y += centerYDiff * 0.5;
                 }
             }
         };
