@@ -135,6 +135,28 @@ const playerSpritePush3: PixelData = [
   [0, 0, 14, 0, 0, 14, 0, 0]
 ];
 
+const playerSpriteKick1: PixelData = [
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 6, 6, 6, 6, 0, 0],
+  [0, 6, 1, 4, 4, 1, 6, 0],
+  [0, 0, 4, 4, 4, 4, 0, 0],
+  [0, 0, 10, 10, 10, 10, 0, 0],
+  [0, 10, 10, 10, 10, 10, 10, 0],
+  [0, 14, 0, 0, 0, 0, 14, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0]
+]; // Copy of jump sprite - first frame
+
+const playerSpriteKick2: PixelData = [
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 6, 6, 6, 6, 0, 0],
+  [0, 6, 1, 4, 4, 1, 6, 0],
+  [0, 0, 4, 4, 4, 4, 0, 0],
+  [0, 0, 10, 10, 10, 10, 0, 0],
+  [0, 10, 10, 10, 10, 10, 10, 0],
+  [0, 14, 0, 0, 0, 0, 14, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0]
+]; // Copy of jump sprite - second frame
+
 const platformSprite: PixelData = [
   [3, 3, 3, 3, 3, 3, 3, 3],
   [2, 2, 2, 2, 2, 2, 2, 3],
@@ -523,6 +545,7 @@ export const INITIAL_ASSETS: Assets = {
       'IDLE': [playerSprite],
       'WALKING': [playerSpriteWalk1, playerSpriteWalk2],
       'JUMPING': [playerSpriteJump],
+      'KICKING': [playerSpriteKick1, playerSpriteKick2],
       'CLIMBING': [playerSpriteClimb1, playerSpriteClimb2],
       'PUSHING': [playerSpritePush1, playerSpritePush2, playerSpritePush3]
     }

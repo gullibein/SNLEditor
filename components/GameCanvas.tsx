@@ -64,7 +64,7 @@ const BLACK = "#000000";
 
 
 const useGameInput = () => {
-    const keys = useRef({ left: false, right: false, up: false, down: false, space: false, backspace: false });
+    const keys = useRef({ left: false, right: false, up: false, down: false, space: false, backspace: false, z: false });
     useEffect(() => {
         const handleKey = (e: KeyboardEvent, isDown: boolean) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -75,6 +75,7 @@ const useGameInput = () => {
                 case 'ArrowDown': case 'KeyS': keys.current.down = isDown; break;
                 case 'Space': keys.current.space = isDown; if (isDown) e.preventDefault(); break;
                 case 'Backspace': case 'Delete': keys.current.backspace = isDown; if (isDown) e.preventDefault(); break;
+                case 'KeyZ': keys.current.z = isDown; if (isDown) e.preventDefault(); break;
             }
         };
         const down = (e: KeyboardEvent) => handleKey(e, true);
@@ -1082,6 +1083,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
         player.fallStartY = player.y; // Initialize fall start to current Y to prevent spawn landing sound
         player.transitionStartX = 0; player.transitionTargetX = null; player.transitionBypassPlatformY = null;
         player.pushStartX = null; player.pushStartY = null; player.pushedCrateId = null; player.isPushing = false;
+        player.kickTimer = 0; player.kickFrame = 0; player.kickStartY = 0;
         if (input) { input.left = false; input.right = false; input.up = false; input.down = false; }
         collectedItemsRef.current.clear(); // Clear collected items tracking
         setLocalLevelData(level.levelData.map(a => ({ ...a })));
@@ -2393,6 +2395,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                     player.onGround = false;
                 }
 
+                // KICK input - start kick animation sequence
+                if (input.z && !prevInput.current.z && (player.state === 'IDLE' || player.state === 'RUN')) {
+                    player.state = 'FICK'; // This is actually KICK state
+                    player.kickTimer = 0;
+                    player.kickFrame = 0; // First frame of kick animation
+                    player.kickStartY = player.y; // Remember Y position for jump
+                    player.onGround = false;
+                }
+
                 // Pressing UP: Use normal ladder overlap (center-based)
                 if (input.up && ladderOverlap) {
                     // Check if at or above the top of this ladder
@@ -2594,6 +2605,31 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
 
                 moveX(player.vx);
                 moveY(player.vy);
+                break;
+
+            case 'FICK':
+                // Handle kick animation sequence: 8 frames for first frame, 16 frames for second frame
+                player.kickTimer++;
+                player.animationState = 'KICKING';
+
+                // First frame for 8 frames, then second frame
+                if (player.kickTimer <= 8) {
+                    player.animationFrame = 0; // First kick frame
+                } else if (player.kickTimer <= 24) { // 8 + 16 = 24
+                    player.animationFrame = 1; // Second kick frame
+                } else {
+                    // Kick animation complete
+                    player.state = player.onGround ? 'IDLE' : 'FALL';
+                    player.kickTimer = 0;
+                    player.kickFrame = 0;
+                }
+
+                // Jump 2 pixels up at frame 10 (which is during second frame since it starts at 9)
+                if (player.kickTimer === 10) {
+                    player.vy = -2; // Jump 2 pixels up
+                    playJumpSound();
+                }
+
                 break;
 
             case 'CLIMB':

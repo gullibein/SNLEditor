@@ -4,7 +4,7 @@ export type PixelData = number[][];
 
 export type AssetType = 'PLAYER' | 'PLATFORM' | 'SPIKE' | 'SPRING' | 'LADDER' | 'TELEPORTER' | 'GEM' | 'CHEST' | 'KEY' | 'DOOR' | 'PILL' | 'SLIME' | 'PUDDLE' | 'LEVEL_LADDER' | 'BAD_MAN' | 'CRATE';
 
-export type PlayerAnimationState = 'IDLE' | 'WALKING' | 'JUMPING' | 'CLIMBING' | 'DYING' | 'PUSHING';
+export type PlayerAnimationState = 'IDLE' | 'WALKING' | 'JUMPING' | 'KICKING' | 'CLIMBING' | 'DYING' | 'PUSHING';
 export type EnemyAnimationState = 'IDLE' | 'WALKING';
 
 export interface Asset {
@@ -48,7 +48,7 @@ export interface PlayerState {
   vx: number;
   vy: number;
   // FSM State
-  state: 'IDLE' | 'RUN' | 'JUMP' | 'FALL' | 'CLIMB';
+  state: 'IDLE' | 'RUN' | 'JUMP' | 'FICK' | 'FALL' | 'CLIMB';
   // Subpixel accumulators
   remainderX: number;
   remainderY: number;
@@ -100,6 +100,11 @@ export interface PlayerState {
   pushStartY: number | null; // Player's Y position when crate push started
   pushedCrateId: string | null; // ID of crate being pushed
   isPushing: boolean; // Whether player is currently pushing
+
+  // Kick state
+  kickTimer: number; // Frame counter for kick animation
+  kickFrame: number; // Current kick frame (0 or 1)
+  kickStartY: number; // Y position when kick started
 }
 
 export type EnemyMoveState = 'IDLE' | 'ACCELERATING' | 'MID_PAUSE' | 'DECELERATING';
