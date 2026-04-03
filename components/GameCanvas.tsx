@@ -75,7 +75,7 @@ const useGameInput = () => {
                 case 'ArrowDown': case 'KeyS': keys.current.down = isDown; break;
                 case 'Space': keys.current.space = isDown; if (isDown) e.preventDefault(); break;
                 case 'Backspace': case 'Delete': keys.current.backspace = isDown; if (isDown) e.preventDefault(); break;
-                case 'KeyZ': keys.current.z = isDown; if (isDown) e.preventDefault(); break;
+                case 'KeyZ': keys.current.z = isDown; console.log('Z key', isDown); if (isDown) e.preventDefault(); break;
             }
         };
         const down = (e: KeyboardEvent) => handleKey(e, true);
@@ -2397,6 +2397,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
 
                 // KICK input - start kick animation sequence
                 if (input.z && !prevInput.current.z && (player.state === 'IDLE' || player.state === 'RUN')) {
+                    console.log('Kick input detected');
                     player.state = 'FICK'; // This is actually KICK state
                     player.kickTimer = 0;
                     player.kickFrame = 0; // First frame of kick animation
@@ -2611,6 +2612,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                 // Handle kick animation sequence: 8 frames for first frame, 16 frames for second frame
                 player.kickTimer++;
                 player.animationState = 'KICKING';
+                console.log('In FICK state, kickTimer:', player.kickTimer);
 
                 // First frame for 8 frames, then second frame
                 if (player.kickTimer <= 8) {
@@ -2628,6 +2630,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
                 if (player.kickTimer === 10) {
                     player.vy = -2; // Jump 2 pixels up
                     playJumpSound();
+                    console.log('Jump kick!');
                 }
 
                 break;
@@ -3598,6 +3601,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ mode, assets, playerAsset, phys
         const oldState = player.animationState;
         let newState: PlayerAnimationState = 'IDLE';
         if (isActuallyPushingCrate) newState = 'PUSHING';
+        else if (player.state === 'FICK') newState = 'KICKING'; // Set animation state based on FSM state
         else if (player.isClimbing) newState = 'CLIMBING';
         else if (!player.onGround) newState = 'JUMPING';
         else if (Math.abs(player.vx) > 0.1) newState = 'WALKING';
